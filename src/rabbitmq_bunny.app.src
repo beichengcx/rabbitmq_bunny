@@ -1,0 +1,38 @@
+{application, rabbitmq_bunny,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { rabbitmq_bunny_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[
+   {connection,
+    [{postgresql, [
+        {host, "192.168.212.129"},
+        {port, 5672},
+        {username, <<"rabbitmq_admin">>},
+        {password, <<"rabbitmq_admin">>},
+        {channels, 10}
+      ]},
+     {riak, [
+       {host, "192.168.212.129"},
+       {port, 5672},
+       {username, <<"rabbitmq_admin">>},
+       {password, <<"rabbitmq_admin">>},
+       {channels, 10}
+     ]},
+     {redis, [
+       {host, "192.168.212.129"},
+       {port, 5672},
+       {username, <<"rabbitmq_admin">>},
+       {password, <<"rabbitmq_admin">>},
+       {channels, 10}]}
+     ]}]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.
