@@ -14,6 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-define(HANDER, rabbitmq_bunny_farm).
 
 %%====================================================================
 %% API functions
@@ -28,9 +29,12 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    
-    {ok, { {one_for_all, 0, 1}, []} }.
+    Specs = specs(),
+    {ok, { {one_for_all, 0, 1}, [Specs]} }.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+specs() ->
+    {?HANDER, {?HANDER, start_link, []}, permanent, 5000, worker, [?HANDER]}.

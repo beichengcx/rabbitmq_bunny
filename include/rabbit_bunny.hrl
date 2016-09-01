@@ -8,9 +8,12 @@
 %%%-------------------------------------------------------------------
 -author("ycc").
 
+-include_lib("amqp_client/include/amqp_client.hrl").
+
 -record(rabbit_bunny, {
   db = "mysql",
   host = "localhost",
   port = 5672,
   username = <<"guest">>,
-  password = <<"guest">>}).
+  password = <<"guest">>,
+  channels = 1}).

@@ -10,15 +10,22 @@
 -author("ycc").
 
 %% API
--export([load_config/0,
-  load_config/1,
+-export([
   init_config/0,
-  reset_config/0]).
+  load_bunny/0,
+  load_bunny/1,
+  init_bunny/0,
+  reset_bunny/0]).
 -include("rabbit_bunny.hrl").
 -include("rabbit_bunny_common.hrl").
 
 
 init_config() ->
+  init_bunny(),
+  init_channels().
+
+
+init_bunny() ->
   ets:new(?TAB_CONFIG, [named_table, public, {keypos, #rabbit_bunny.db}]),
   case application:get_env(rabbitmq_bunny, connection) of
     {ok, Conf} ->
@@ -41,11 +48,13 @@ init_config() ->
     Failed ->
       io:format("Failed = ~p~n", [Failed]),
       Failed
-%%      lager:log(error, self(), "*** Module:~p, Line:~p,Init rabbit_bunny config failed, Reason: ~p~n", [?MODULE, ?LINE, Failed])
   end.
 
+init_channels() ->
+  ok.
 
-reset_config() ->
+
+reset_bunny() ->
   ets:delete(?TAB_CONFIG),
   ets:new(?TAB_CONFIG, [named_table, public, {keypos, #rabbit_bunny.db}]),
   case application:get_env(telegram_cs, connection) of
@@ -67,19 +76,15 @@ reset_config() ->
       lists:foreach(F, Conf);
     Failed ->
       Failed
-%%      lager:log(error, self(), "*** Module:~p, Line:~p,Init rabbit_bunny config failed, Reason: ~p~n", [?MODULE, ?LINE, Failed])
   end.
 
-load_config() ->
+load_bunny() ->
   ets:tab2list(?TAB_CONFIG).
 
-
-load_config(Key) ->
+load_bunny(Key) ->
   case ets:lookup(?TAB_CONFIG, Key) of
     [] ->
       [];
-%%      lager:log(error, self(), "*** Module:~p, Line:~p, Load telegram config failed, Reason: ~p~n", [?MODULE, ?LINE, empty]);
     Config when is_list(Config) ->
-      [_tab | Conf] = Config,
-      Conf
+      Config
   end.
