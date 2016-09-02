@@ -9,3 +9,4 @@
 -author("ycc").
 
 -define(TAB_CONFIG, rabbit_bunny).
+-define(TAB_CHANNELS, rabbit_bunny_channels).

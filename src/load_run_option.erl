@@ -14,6 +14,7 @@
   init_config/0,
   load_bunny/0,
   load_bunny/1,
+  load_channels/0,
   init_bunny/0,
   reset_bunny/0]).
 -include("rabbit_bunny.hrl").
@@ -46,11 +47,22 @@ init_bunny() ->
           end,
       lists:foreach(F, Conf);
     Failed ->
-      io:format("Failed = ~p~n", [Failed]),
+      io:format("Faild init connection host: ~p~n", [Failed]),
       Failed
   end.
 
 init_channels() ->
+  ets:new(?TAB_CHANNELS, [named_table, public, bag]),
+  case application:get_env(rabbitmq_bunny, channels) of
+    {ok, Channels} ->
+      lists:foreach(fun(Channel) ->
+        ets:insert(?TAB_CHANNELS, {channel_name, Channel})
+        end, Channels),
+      Channels;
+    Failed ->
+      io:format("Failed init channels: ~p~n", [Failed]),
+      Failed
+    end,
   ok.
 
 
@@ -86,5 +98,15 @@ load_bunny(Key) ->
     [] ->
       [];
     Config when is_list(Config) ->
-      Config
+      Config;
+    Error ->
+      io:format("Failed load connection host: ~p~n", [Error])
+  end.
+
+load_channels() ->
+  case ets:lookup(?TAB_CHANNELS, channel_name) of
+    [] ->
+      [];
+    TupleList when is_list(TupleList) ->
+      TupleList
   end.

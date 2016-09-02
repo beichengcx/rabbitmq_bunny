@@ -29,7 +29,10 @@
        {username, <<"rabbitmq_admin">>},
        {password, <<"rabbitmq_admin">>},
        {channels, 10}]}
-     ]}]},
+     ]},
+    {channels,
+      [user, chat_dialog, chat_message, contacts]}]},
+    {queues, [<<"user.user_info">>, <<"user.user_chat_dialog">>, "contacts.user_contacts"]},
   {modules, []},
 
   {maintainers, []},
