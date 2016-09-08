@@ -1,41 +1,119 @@
 {application, rabbitmq_bunny,
- [{description, "An OTP application"},
-  {vsn, "0.1.0"},
-  {registered, []},
-  {mod, { rabbitmq_bunny_app, []}},
-  {applications,
-   [kernel,
-    stdlib
-   ]},
-  {env,[
-   {connection,
-    [{postgresql, [
-        {host, "192.168.212.129"},
-        {port, 5672},
-        {username, <<"rabbitmq_admin">>},
-        {password, <<"rabbitmq_admin">>},
-        {channels, 10}
+  [{description, "An OTP application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {rabbitmq_bunny_app, []}},
+    {applications,
+      [kernel,
+        stdlib
       ]},
-     {riak, [
-       {host, "192.168.212.129"},
-       {port, 5672},
-       {username, <<"rabbitmq_admin">>},
-       {password, <<"rabbitmq_admin">>},
-       {channels, 10}
-     ]},
-     {redis, [
-       {host, "192.168.212.129"},
-       {port, 5672},
-       {username, <<"rabbitmq_admin">>},
-       {password, <<"rabbitmq_admin">>},
-       {channels, 10}]}
-     ]},
-    {channels,
-      [user, chat_dialog, chat_message, contacts]}]},
-    {queues, [<<"user.user_info">>, <<"user.user_chat_dialog">>, "contacts.user_contacts"]},
-  {modules, []},
+    {env, [
+      {connection,
+        [{postgresql, [
+          {connection, [
+            {host, "192.168.212.129"},
+            {port, 5672},
+            {username, <<"rabbitmq_admin">>},
+            {password, <<"rabbitmq_admin">>}
+          ]},
+          {exchange, <<"topic">>},
+          {queues, [
+            {<<"auth">>,
+              [<<"auth.authorization">>]},
+            {<<"user">>,
+              [<<"user.user">>,
+                <<"user.user_blocked_list">>,
+                <<"user.user_gps_location">>,
+                <<"user.user_phone_contact">>,
+                <<"user.user_contact">>]},
+            {<<"channel">>,
+              [<<"channel.channel">>,
+                <<"channel.channel_full">>,
+                <<"channel.channel_user">>]},
+            {<<"chat">>,
+              [<<"chat.chat_group">>,
+                <<"chat.chat_group_user">>]},
+            {<<"private">>,
+              [<<"private.private_chat">>]},
+            {<<"dialog">>,
+              [<<"dialog.user_chat_dialog">>]},
+            {<<"message">>,
+              [<<"message.user_chat_message">>,
+                <<"message.user_chat_message_backend">>]},
+            {<<"system">>,
+              [<<"system.white_list">>,
+                <<"system.gps_acl_users">>,
+                <<"system.spatial_ref_sys">>]},
+            {<<"media">>,
+              [<<"media.media_digest">>]},
+            {<<"stiker">>,
+              [<<"stiker.shop_stiker_set">>,
+                <<"stiker.user_sticker_set">>,
+                <<"stiker.sticker_packs">>,
+                <<"stiker.sticker_pack_document">>]}
+          ]}
+        ]},
+          {riak, [
+            {connection, [
+              {host, "192.168.212.129"},
+              {port, 5672},
+              {username, <<"rabbitmq_admin">>},
+              {password, <<"rabbitmq_admin">>}
+            ]},
+            {exchange, <<"topic">>},
+            {queues, []}
+          ]},
+          {redis, [
+            {connection, [
+              {host, "192.168.212.129"},
+              {port, 5672},
+              {username, <<"rabbitmq_admin">>},
+              {password, <<"rabbitmq_admin">>}
+            ]},
+            {exchange, <<"topic">>},
+            {queues, []}]}
+        ]},
+      {channels,
+        [user, chat_dialog, chat_message, contacts]},
+      {queues, [
+        {auth,
+          [<<"auth.authorization">>]},
+        {user,
+          [<<"user.user">>,
+          <<"user.user_blocked_list">>,
+          <<"user.user_gps_location">>,
+          <<"user.user_phone_contact">>,
+          <<"user.user_contact">>]},
+        {channel,
+          [<<"channel.channel">>,
+          <<"channel.channel_full">>,
+          <<"channel.channel_user">>]},
+        {chat,
+          [<<"chat.chat_group">>,
+          <<"chat.chat_group_user">>]},
+        {private,
+          [<<"private.private_chat">>]},
+        {dialog,
+          [<<"dialog.user_chat_dialog">>]},
+        {message,
+          [<<"message.user_chat_message">>,
+          <<"message.user_chat_message_backend">>]},
+        {system,
+          [<<"system.white_list">>,
+          <<"system.gps_acl_users">>,
+          <<"system.spatial_ref_sys">>]},
+        {media,
+          [<<"media.media_digest">>]},
+        {stiker,
+          [<<"stiker.shop_stiker_set">>,
+          <<"stiker.user_sticker_set">>,
+          <<"stiker.sticker_packs">>,
+          <<"stiker.sticker_pack_document">>]}
+      ]}
+    ]},
+    {modules, []},
 
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
- ]}.
+    {maintainers, []},
+    {licenses, []},
+    {links, []}
+  ]}.

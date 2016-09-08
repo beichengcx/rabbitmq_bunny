@@ -10,6 +10,7 @@
 -author("ycc").
 
 -include("rabbit_bunny.hrl").
+-include("rabbit_bunny_common.hrl").
 %% API
 -export([subscribe/2]).
 
@@ -18,9 +19,9 @@
 -spec subscribe(pid, binary) -> any.
 subscribe(Channel, Queue) ->
   amqp_channel:call(Channel, #'basic.qos'{prefetch_count = 1}),
-  amqp_channel:subscribe(Channel,
-    #'basic.consume'{queue = Queue},
-    self()),
+  Sub = #'basic.consume'{queue = Queue},
+  Tag = "ok",
+  #'basic.consume_ok'{consumer_tag = Tag} = amqp_channel:subscribe(Channel, Sub, self()),
   receive
     #'basic.consume_ok'{} ->
       ok

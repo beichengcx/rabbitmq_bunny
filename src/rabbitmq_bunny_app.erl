@@ -26,4 +26,4 @@ stop(_State) ->
 %% Internal functions
 %%====================================================================
 init_config() ->
-    load_run_option:init_config().
+    rabbitmq_bunny_util:init_config().

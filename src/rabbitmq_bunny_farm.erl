@@ -35,6 +35,7 @@
 -define(SERVER, ?MODULE).
 -record(state, {connection = [], channel = []}).
 -include("rabbit_bunny.hrl").
+-include("rabbit_bunny_common.hrl").
 
 
 %%%===================================================================
@@ -93,12 +94,7 @@ start_link() ->
 init([]) ->
   process_flag(trap_exit, true),
   io:format("start server ~p...~n", [?MODULE]),
-%%  gen_server:call(self(), {new_connection, [Host, Port, UserName, Passwd]}),
-  ServerOpts = load_run_option:load_bunny(),
-  lists:foreach(fun({_tab, Db, Host, Port, UserName, Passwd, _Channels}) ->
-    self() ! {new_connection, [Db, Host, Port, UserName, Passwd]}
-    end,
-    ServerOpts),
+  set_up(),
   {ok, #state{connection = [], channel = []}}.
 
 %%--------------------------------------------------------------------
@@ -222,3 +218,70 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+set_up() ->
+  case rabbitmq_bunny_util:get_conf() of
+    {ok, Conf} ->
+      lists:foreach(fun({_Db, DbConfig}) ->
+        io:format("Module:~p, Line:~p, Conf = ~p~n", [?MODULE, ?LINE, DbConfig]),
+        do_set_up(DbConfig)
+        end, Conf);
+    Error ->
+      error_logger:error_msg("load rabbitmq_bunny config failed, Reason: ~p~n", [Error]),
+      skip
+  end,
+  ok.
+
+do_set_up(Conf) ->
+%%  {Conn, Exchange, Queue} = Conf,
+  Conn = proplists:get_value(connection, Conf),
+  ExchangeType = proplists:get_value(exchange, Conf),
+  Queue = proplists:get_value(queues, Conf),
+  {ok, Connection} = set_up_connection(Conn),
+  set_up_queue(Connection, ExchangeType, Queue).
+
+set_up_connection(Conn) ->
+  Host = proplists:get_value(host, Conn),
+  Port = proplists:get_value(port, Conn),
+  UserName = proplists:get_value(username, Conn),
+  Passwd = proplists:get_value(password, Conn),
+  amqp_connection:start(
+    #amqp_params_network{
+      host = Host,
+      port = Port,
+      username = UserName,
+      password = Passwd}).
+
+
+
+%% 针对queue类型创建对应的channel,创建queue,并且绑定exchange
+set_up_queue(Connection, ExchangeType, QueueConf) ->
+  F = fun({Exchange, Queues}) ->
+    {ok, Channel} = amqp_connection:open_channel(Connection),
+    io:format("Module:~p, Line:~p, Exchange = ~p, ExchangeType = ~p~n", [?MODULE, ?LINE, Exchange, ExchangeType]),
+    DecExchange = #'exchange.declare'{exchange = Exchange, type = ExchangeType}, %%type: fanout/direct/topic/headers
+    io:format("Module:~p, Line:~p, DecExchange = ~p~n", [?MODULE, ?LINE, DecExchange]),
+    lists:foreach(fun(Queue) ->
+      QDeclare = #'queue.declare'{queue = Queue, durable = true}, % 声明queue,durable 指定Queu持久化
+      amqp_channel:call(Channel, QDeclare)
+                  end, Queues)
+%%      Binding = #'queue.bind'{
+%%        queue       = Queue,
+%%        exchange    = DecExchange,     %% fanout/direct/topic/headers
+%%        routing_key = Queue},
+%%      io:format("Module:~p, Line:~p, Binding = ~p~n", [?MODULE, ?LINE, Binding]),
+%%      #'queue.bind_ok'{} = amqp_channel:call(Channel, Binding)
+%%                  end, Queues)
+      end,
+  lists:foreach(F, QueueConf).
+%%
+%%send(Queue, PayLoad) ->
+%%  send(<<"topic">>, Queue, PayLoad).
+%%send(Exchange, Queue, PayLoad) ->
+%%  send(Exchange, Queue, PayLoad, ?MESSAGE_DELIVERY_MODE).
+%%
+%%send(Exchange, Queue, PayLoad, DeliveryMode) ->
+%%  Publish = #'basic.publish'{exchange = Exchange, routing_key = Queue},
+%%  Props = #'P_basic'{delivery_mode = DeliveryMode}, %% 2:persistent message
+%%  Msg = #amqp_msg{props = Props, payload = PayLoad},
+%%  amqp_channel:cast(Channel, Publish, Msg).
