@@ -15,7 +15,7 @@
 -export([start_link/0]).
 
 
--export([new_connection/4,
+-export([new_connection/1,
   new_channel/2,
   new_queue/3,
   close_channel/1,
@@ -42,8 +42,8 @@
 %%% API
 %%%===================================================================
 
-new_connection(Host, Port, UserName, Passwd) ->
-  gen_server:call(rabbitmq_bunny_farm, {new_connection, [Host, Port, UserName, Passwd]}).
+new_connection(Connection) ->
+  gen_server:call(rabbitmq_bunny_farm, {new_connection, Connection}).
 
 new_channel(ChannelType, Connection) ->
   gen_server:call(rabbitmq_bunny_farm, {new_channel, [ChannelType, Connection]}).
@@ -94,8 +94,10 @@ start_link() ->
 init([]) ->
   process_flag(trap_exit, true),
   io:format("start server ~p...~n", [?MODULE]),
-  set_up(),
+%%  erlang:send(self(), set_up),
+%%  [Connection, Channel] = set_up(),
   {ok, #state{connection = [], channel = []}}.
+%%  {ok, #state{connection = Connection, channel = Channel}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -112,8 +114,13 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+
+handle_call(set_up, _From, State) ->
+  io:format("Module:~p, Line:~p, test set up", [?MODULE, ?LINE]),
+  {reply, State, State};
+
 handle_call({new_connection, [Db, Host, Port, UserName, Passwd]}, _From, State) ->
-  io:format("Module:~p,Line:~p, new connection!", [?MODULE, ?LINE]),
+  io:format("Module:~p,Line:~p, new connection on Host = ~p!~n", [?MODULE, ?LINE, Host]),
   {ok, Connection} = amqp_connection:start(#amqp_params_network{host = Host,
     port = Port,
     username = UserName,
@@ -122,13 +129,19 @@ handle_call({new_connection, [Db, Host, Port, UserName, Passwd]}, _From, State) 
   {reply, Connection, State#state{connection = [{Db, Connection} | State#state.connection]}};
 
 handle_call({new_channel, [ChannelType, Connection]}, _From, State) ->
+
   {ok, Channel} = amqp_connection:open_channel(Connection),
+  io:format("Module:~p,Line:~p, ChannelType=~p, Channel: ~p~n",[?MODULE, ?LINE, ChannelType, Channel]),
   {reply, Channel, State#state{channel = [{ChannelType, Channel} | State#state.channel]}};
 
 handle_call({new_queue, [Channel, QueueName, Durable]}, _From, State) ->
-  Reply = amqp_channel:call(Channel, #'queue.declare'{queue = QueueName,
-    durable = Durable}),
-  {reply, Reply, State#state{channel = [Channel | State#state.channel]}};
+%%  Reply = amqp_channel:call(Channel, #'queue.declare'{queue = QueueName,
+%%    durable = Durable}),
+  io:format("Module:~p,Line:~p, Channel: ~p, Queue: ~p, ~n",[?MODULE, ?LINE, Channel, QueueName]),
+  QDeclare = #'queue.declare'{queue = QueueName, durable = Durable}, % 声明queue,durable 指定Queu持久化
+%%  Reply = amqp_channel:call(Channel, QDeclare),
+  Reply = ok,
+  {reply, Reply, State};
 
 handle_call({close_channel, [Channel]}, _From, State) ->
   {ok, Channel} = amqp_channel:close(Channel),
@@ -139,10 +152,13 @@ handle_call({close_connection, [Connection]}, _From, State) ->
   {reply, Channel, State#state{channel = State#state.connection -- Connection}};
 
 handle_call(monitor, _From, State) ->
-  {reply, State, State};
+  Connection = {connection, State#state.connection},
+  Channel = {channel, State#state.channel},
+  {reply, [Connection, Channel], State};
 
 
-handle_call(_Request, _From, State) ->
+handle_call(Request, _From, State) ->
+  io:format("Request not realised: ~p~n", [Request]),
   {reply, ok, State}.
 
 %%--------------------------------------------------------------------
@@ -219,26 +235,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-set_up() ->
-  case rabbitmq_bunny_util:get_conf() of
-    {ok, Conf} ->
-      lists:foreach(fun({_Db, DbConfig}) ->
-        io:format("Module:~p, Line:~p, Conf = ~p~n", [?MODULE, ?LINE, DbConfig]),
-        do_set_up(DbConfig)
-        end, Conf);
-    Error ->
-      error_logger:error_msg("load rabbitmq_bunny config failed, Reason: ~p~n", [Error]),
-      skip
-  end,
-  ok.
 
-do_set_up(Conf) ->
-%%  {Conn, Exchange, Queue} = Conf,
-  Conn = proplists:get_value(connection, Conf),
-  ExchangeType = proplists:get_value(exchange, Conf),
-  Queue = proplists:get_value(queues, Conf),
-  {ok, Connection} = set_up_connection(Conn),
-  set_up_queue(Connection, ExchangeType, Queue).
 
 set_up_connection(Conn) ->
   Host = proplists:get_value(host, Conn),
@@ -273,7 +270,7 @@ set_up_queue(Connection, ExchangeType, QueueConf) ->
 %%      #'queue.bind_ok'{} = amqp_channel:call(Channel, Binding)
 %%                  end, Queues)
       end,
-  lists:foreach(F, QueueConf).
+  lists:map(F, QueueConf).
 %%
 %%send(Queue, PayLoad) ->
 %%  send(<<"topic">>, Queue, PayLoad).
@@ -285,3 +282,6 @@ set_up_queue(Connection, ExchangeType, QueueConf) ->
 %%  Props = #'P_basic'{delivery_mode = DeliveryMode}, %% 2:persistent message
 %%  Msg = #amqp_msg{props = Props, payload = PayLoad},
 %%  amqp_channel:cast(Channel, Publish, Msg).
+
+close() ->
+  ok.

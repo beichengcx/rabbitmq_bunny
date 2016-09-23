@@ -11,10 +11,10 @@
       {connection,
         [{postgresql, [
           {connection, [
-            {host, "192.168.212.129"},
+            {host, "192.168.212.127"},
             {port, 5672},
-            {username, <<"rabbitmq_admin">>},
-            {password, <<"rabbitmq_admin">>}
+            {username, <<"potato">>},
+            {password, <<"potato">>}
           ]},
           {exchange, <<"topic">>},
           {queues, [
@@ -55,20 +55,20 @@
         ]},
           {riak, [
             {connection, [
-              {host, "192.168.212.129"},
+              {host, "192.168.212.127"},
               {port, 5672},
-              {username, <<"rabbitmq_admin">>},
-              {password, <<"rabbitmq_admin">>}
+              {username, <<"potato">>},
+              {password, <<"potato">>}
             ]},
             {exchange, <<"topic">>},
             {queues, []}
           ]},
           {redis, [
             {connection, [
-              {host, "192.168.212.129"},
+              {host, "192.168.212.127"},
               {port, 5672},
-              {username, <<"rabbitmq_admin">>},
-              {password, <<"rabbitmq_admin">>}
+              {username, <<"potato">>},
+              {password, <<"potato">>}
             ]},
             {exchange, <<"topic">>},
             {queues, []}]}
